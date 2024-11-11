@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <!-- Self-contained publishing settings -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>  <!-- Target Windows 64-bit -->
+    <PublishSingleFile>true</PublishSingleFile>     <!-- Publish as a single .exe file -->
+    
+    <!-- Disable trimming for WPF application to avoid issues -->
+    <PublishTrimmed>false</PublishTrimmed>          <!-- Disable trimming -->
+    
+    <PublishReadyToRun>true</PublishReadyToRun>     <!-- Enable ready-to-run compilation for faster startup -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Images\encryptImage.jpeg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="itext7" Version="8.0.5" />
+    <PackageReference Include="Pdfium.Net.SDK" Version="4.94.2704" />
+    <PackageReference Include="PDFsharp" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\encryptImage.jpeg" />
+  </ItemGroup>
+
+</Project>
