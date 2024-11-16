@@ -83,3 +83,9 @@ ByteDesApp is a Windows Presentation Foundation (WPF) application designed to de
 
 - **DesUtils.cs**  
   Contains encryption functions and other utilities used in the encryption and decryption process.
+
+---
+
+## License
+
+This project is licensed under the terms of the **GNU General Public License v3.0**. See the [LICENSE](LICENSE) file for details.
