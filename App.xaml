@@ -1,0 +1,11 @@
+﻿<Application x:Class="ByteDesApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <BitmapImage x:Key="encryptImage" UriSource="pack://application:,,,/Images/encryptImage.jpeg" />
+            <FontFamily x:Key="DotoFont">pack://application:,,,/Fonts/#Doto</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

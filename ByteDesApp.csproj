@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- Updated ApplicationIcon path -->
+    <ApplicationIcon>Icon\encryptIco.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Fonts\Doto-VariableFont_ROND,wght.ttf" />
+    <None Remove="Images\encryptImage.jpeg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fonts\Doto-VariableFont_ROND,wght.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include the icon as a project resource -->
+    <Resource Include="Icon\encryptIco.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Images\encryptImage.jpeg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="itext7" Version="8.0.5" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" Version="8.0.5" />
+    <PackageReference Include="itext7.bouncy-castle-fips-adapter" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>
