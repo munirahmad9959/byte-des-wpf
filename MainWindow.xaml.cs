@@ -90,6 +90,7 @@ namespace ByteDesApp
                     MessageBox.Show($"Error reading PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
 
+                // Modify this to use the first 8 characters of the user's name
                 string keyString = "0E329232EA6D0D73";
                 string binaryString = DesUtils.Hex2Bin(keyString);
 
@@ -177,6 +178,20 @@ namespace ByteDesApp
                     Console.WriteLine(cipher);
                 }
 
+                string keyFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(pdfFilePath) ?? ".", "Keys.txt");
+
+                // Save the keys to a file
+                using (StreamWriter writer = new StreamWriter(keyFilePath))
+                {
+                    foreach (string k in roundKeyHex)
+                    {
+                        writer.WriteLine(k); // Save each round key as a separate line
+                    }
+                }
+
+                MessageBox.Show($"Encryption completed! Round keys saved to: {keyFilePath}");
+
+
                 WritePdfClass.WritePdf(cipher_text, pdfFilePath);
             }
         }
@@ -185,17 +200,6 @@ namespace ByteDesApp
         private void decryptBtn_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("Decryption:");
-
-            // Reverse the round keys for decryption
-            List<string> roundKeyBinaryRev = new List<string>(roundKeyBinary);
-            roundKeyBinaryRev.Reverse();
-            List<string> roundKeyHexRev = new List<string>(roundKeyHex);
-            roundKeyHexRev.Reverse();
-            List<string> decryptedBlocks = new List<string>();
-
-            // List to store 64-bit (8-byte) blocks of cleaned text in original notation
-            List<string> cipher_text = new List<string>();
-
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Filter = "PDF files (*.pdf)|*.pdf",
@@ -204,11 +208,47 @@ namespace ByteDesApp
 
             if (openFileDialog.ShowDialog() == true)
             {
-                string text;
-                string pdfFilePath = openFileDialog.FileName;
+                string keyFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(openFileDialog.FileName) ?? ".", "Keys.txt");
+
+                if (File.Exists(keyFilePath))
+                {
+                    roundKeyHex.Clear();
+                    roundKeyBinary.Clear();
+
+                    // Load the round keys from the file
+                    using (StreamReader reader = new StreamReader(keyFilePath))
+                    {
+                        string? line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            roundKeyHex.Add(line);
+                            roundKeyBinary.Add(DesUtils.Hex2Bin(line)); // Convert the hex key to binary and add to roundKeyBinary
+                        }
+                    }
+
+                    Console.WriteLine("Round keys successfully loaded for decryption.");
+                }
+                else
+                {
+                    MessageBox.Show($"Round key file not found: {keyFilePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Reverse the round keys for decryption
+                List<string> roundKeyBinaryRev = new List<string>(roundKeyBinary);
+                roundKeyBinaryRev.Reverse();
+                List<string> roundKeyHexRev = new List<string>(roundKeyHex);
+                roundKeyHexRev.Reverse();
+                List<string> decryptedBlocks = new List<string>();
+
+                // List to store 64-bit (8-byte) blocks of cleaned text in original notation
+                List<string> cipher_text = new List<string>();
 
                 try
                 {
+                    string text;
+                    string pdfFilePath = openFileDialog.FileName;
+
                     StringBuilder extractedText = new StringBuilder();
                     using (PdfReader pdfReader = new PdfReader(pdfFilePath))
                     using (PdfDocument pdfDoc = new PdfDocument(pdfReader))
@@ -251,63 +291,63 @@ namespace ByteDesApp
                 {
                     MessageBox.Show($"Error reading PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-            }
 
-            foreach (var cipher in cipher_text)
-            {
-                if (cipher.Length != 16)
+                foreach (var cipher in cipher_text)
                 {
-                    Console.WriteLine($"Skipping invalid block: {cipher} (length {cipher.Length})");
-                    continue;
-                }
-
-                try
-                {
-                    List<string> decryptedBinaryList = DesUtils.Encrypt(cipher, roundKeyBinaryRev, roundKeyHexRev);
-                    foreach (var decryptedBinary in decryptedBinaryList)
+                    if (cipher.Length != 16)
                     {
-                        string decryptedHex = DesUtils.Bin2Hex(decryptedBinary);
-                        decryptedBlocks.Add(decryptedHex);
+                        Console.WriteLine($"Skipping invalid block: {cipher} (length {cipher.Length})");
+                        continue;
+                    }
+
+                    try
+                    {
+                        List<string> decryptedBinaryList = DesUtils.Encrypt(cipher, roundKeyBinaryRev, roundKeyHexRev);
+                        foreach (var decryptedBinary in decryptedBinaryList)
+                        {
+                            string decryptedHex = DesUtils.Bin2Hex(decryptedBinary);
+                            decryptedBlocks.Add(decryptedHex);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error decrypting block {cipher}: {ex.Message}");
                     }
                 }
-                catch (Exception ex)
+
+                // Convert hex values back to readable plaintext
+                StringBuilder plaintext = new StringBuilder();
+                foreach (var hexValue in decryptedBlocks)
                 {
-                    Console.WriteLine($"Error decrypting block {cipher}: {ex.Message}");
+                    for (int i = 0; i < hexValue.Length; i += 2)
+                    {
+                        // Convert each hex pair to a character
+                        string hexChar = hexValue.Substring(i, 2);
+                        int charCode = Convert.ToInt32(hexChar, 16);
+                        plaintext.Append((char)charCode);
+                    }
                 }
-            }
 
-            // Convert hex values back to readable plaintext
-            StringBuilder plaintext = new StringBuilder();
-            foreach (var hexValue in decryptedBlocks)
-            {
-                for (int i = 0; i < hexValue.Length; i += 2)
+                // Remove padding from the last block
+                int lastChar = plaintext.Length > 0 ? plaintext[plaintext.Length - 1] : 0;
+                if (lastChar > 0 && lastChar <= 8) // Assuming block size is 8 bytes
                 {
-                    // Convert each hex pair to a character
-                    string hexChar = hexValue.Substring(i, 2);
-                    int charCode = Convert.ToInt32(hexChar, 16);
-                    plaintext.Append((char)charCode);
+                    int paddingLength = lastChar;
+                    plaintext.Remove(plaintext.Length - paddingLength, paddingLength);
                 }
+
+                // Display the result
+                Console.WriteLine("PlainText string representation: ");
+                Console.Write(plaintext.ToString());
+
+                // Save the decrypted content to a PDF file
+                string decryptedFilePath = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(openFileDialog.FileName) ?? ".",
+                    "DecryptedContent.pdf"
+                );
+                WriteDecryptedPdf(new List<string> { plaintext.ToString() }, decryptedFilePath);
+                MessageBox.Show($"Decrypted content saved to PDF at: {decryptedFilePath}");
             }
-
-            // Remove padding from the last block
-            int lastChar = plaintext.Length > 0 ? plaintext[plaintext.Length - 1] : 0;
-            if (lastChar > 0 && lastChar <= 8) // Assuming block size is 8 bytes
-            {
-                int paddingLength = lastChar;
-                plaintext.Remove(plaintext.Length - paddingLength, paddingLength);
-            }
-
-            // Display the result
-            Console.WriteLine("PlainText string representation: ");
-            Console.Write(plaintext.ToString());
-
-            // Save the decrypted content to a PDF file
-            string decryptedFilePath = System.IO.Path.Combine(
-                System.IO.Path.GetDirectoryName(openFileDialog.FileName) ?? ".",
-                "DecryptedContent.pdf"
-            );
-            WriteDecryptedPdf(new List<string> { plaintext.ToString() }, decryptedFilePath);
-            MessageBox.Show($"Decrypted content saved to PDF at: {decryptedFilePath}");
         }
 
         public static void WriteDecryptedPdf(List<string> decryptedContent, string filePath)
